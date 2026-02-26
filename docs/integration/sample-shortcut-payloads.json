@@ -1,0 +1,13 @@
+{
+  "startSession": {
+    "userId": "u-1",
+    "templateVersion": "daily-v1"
+  },
+  "answerTurnText": {
+    "transcript": "我昨天完成了需求拆分"
+  },
+  "answerTurnAudio": {
+    "audioUrl": "https://example.com/a.m4a"
+  },
+  "finalize": {}
+}

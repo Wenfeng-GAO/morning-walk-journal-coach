@@ -7,7 +7,8 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint:docs": "node scripts/lint-docs.mjs"
   },
   "dependencies": {
     "fastify": "^5.6.1",

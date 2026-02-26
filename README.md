@@ -11,3 +11,5 @@ An iPhone-first, voice-driven morning reflection assistant that guides structure
 ## Docs
 - [Design](docs/plans/2026-02-26-morning-walk-journal-coach-design.md)
 - [Implementation Plan](docs/plans/2026-02-26-morning-walk-journal-coach-implementation.md)
+- [iOS Shortcut Contract](docs/integration/ios-shortcut-contract.md)
+- [Sample Shortcut Payloads](docs/integration/sample-shortcut-payloads.json)
