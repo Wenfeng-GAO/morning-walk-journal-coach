@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
+import type { SttAdapter } from "../adapters/stt";
 import { computeNextQuestion } from "../domain/question-policy";
 import { FIRST_QUESTION, type Session } from "../domain/session";
 import type { SessionStore } from "../store/in-memory-session-store";
@@ -17,10 +18,15 @@ const answerTurnParamsSchema = z.object({
 });
 
 const answerTurnBodySchema = z.object({
-  transcript: z.string().min(1).optional()
+  transcript: z.string().min(1).optional(),
+  audioUrl: z.string().url().optional()
 });
 
-export function registerSessionRoutes(app: FastifyInstance, store: SessionStore) {
+export function registerSessionRoutes(
+  app: FastifyInstance,
+  store: SessionStore,
+  sttAdapter: SttAdapter
+) {
   app.post("/sessions/start", async (request, reply) => {
     const body = startSessionBodySchema.parse(request.body);
 
@@ -53,11 +59,19 @@ export function registerSessionRoutes(app: FastifyInstance, store: SessionStore)
       return reply.status(404).send({ message: "session not found" });
     }
 
-    if (!body.transcript) {
-      return reply.status(400).send({ message: "transcript is required" });
+    let transcript = body.transcript;
+    let usedInputType: "text" | "audio" = "text";
+
+    if (!transcript && body.audioUrl) {
+      transcript = await sttAdapter.transcribeAudioUrl(body.audioUrl);
+      usedInputType = "audio";
     }
 
-    session.transcript.push({ role: "user", text: body.transcript });
+    if (!transcript) {
+      return reply.status(400).send({ message: "transcript or audioUrl is required" });
+    }
+
+    session.transcript.push({ role: "user", text: transcript });
     session.turnIndex += 1;
 
     const next = computeNextQuestion(session);
@@ -72,7 +86,7 @@ export function registerSessionRoutes(app: FastifyInstance, store: SessionStore)
       nextQuestion: next.nextQuestion,
       nextQuestionType: next.nextQuestionType,
       turnIndex: session.turnIndex,
-      usedInputType: "text"
+      usedInputType
     });
   });
 }
