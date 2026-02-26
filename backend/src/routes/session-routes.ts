@@ -4,8 +4,10 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import type { SttAdapter } from "../adapters/stt";
+import { composeMorningNote } from "../domain/markdown-composer";
 import { computeNextQuestion } from "../domain/question-policy";
 import { FIRST_QUESTION, type Session } from "../domain/session";
+import { sendAppError } from "../http/errors";
 import type { SessionStore } from "../store/in-memory-session-store";
 
 const startSessionBodySchema = z.object({
@@ -21,6 +23,28 @@ const answerTurnBodySchema = z.object({
   transcript: z.string().min(1).optional(),
   audioUrl: z.string().url().optional()
 });
+
+const finalizeParamsSchema = z.object({
+  sessionId: z.string().min(1)
+});
+
+function toMorningNoteInput(session: Session) {
+  const userTurns = session.transcript
+    .filter((message) => message.role === "user")
+    .map((message) => message.text);
+
+  const facts = userTurns.slice(0, 3);
+  const review = userTurns.slice(3, 6).join("；");
+  const top3 = userTurns.slice(6, 9);
+
+  return {
+    sleepAt: "22:30",
+    wakeAt: "06:45",
+    facts,
+    review,
+    top3
+  };
+}
 
 export function registerSessionRoutes(
   app: FastifyInstance,
@@ -56,7 +80,7 @@ export function registerSessionRoutes(
     const session = store.get(params.sessionId);
 
     if (!session) {
-      return reply.status(404).send({ message: "session not found" });
+      return sendAppError(reply, 404, "SESSION_NOT_FOUND", "Session does not exist");
     }
 
     let transcript = body.transcript;
@@ -68,7 +92,12 @@ export function registerSessionRoutes(
     }
 
     if (!transcript) {
-      return reply.status(400).send({ message: "transcript or audioUrl is required" });
+      return sendAppError(
+        reply,
+        400,
+        "INVALID_INPUT",
+        "transcript or audioUrl is required"
+      );
     }
 
     session.transcript.push({ role: "user", text: transcript });
@@ -87,6 +116,31 @@ export function registerSessionRoutes(
       nextQuestionType: next.nextQuestionType,
       turnIndex: session.turnIndex,
       usedInputType
+    });
+  });
+
+  app.post("/sessions/:sessionId/finalize", async (request, reply) => {
+    const params = finalizeParamsSchema.parse(request.params);
+    const session = store.get(params.sessionId);
+
+    if (!session) {
+      return sendAppError(reply, 404, "SESSION_NOT_FOUND", "Session does not exist");
+    }
+
+    if (session.stage !== "done") {
+      return sendAppError(
+        reply,
+        409,
+        "SESSION_NOT_COMPLETE",
+        "Session is not complete"
+      );
+    }
+
+    const markdown = composeMorningNote(toMorningNoteInput(session));
+
+    return reply.send({
+      sessionId: session.sessionId,
+      markdown
     });
   });
 }
