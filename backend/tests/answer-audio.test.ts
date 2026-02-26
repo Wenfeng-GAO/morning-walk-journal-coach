@@ -5,7 +5,7 @@ import { buildApp } from "../src/app";
 
 describe("answer turn audio", () => {
   it("accepts audioUrl payload and uses stt adapter", async () => {
-    const app = buildApp();
+    const app = buildApp({ useMockAdapters: true });
     await app.ready();
 
     const start = await request(app.server).post("/sessions/start").send({
