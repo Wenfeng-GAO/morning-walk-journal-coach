@@ -3,8 +3,9 @@ import { describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app";
 
+const liveApiKey = process.env.OPENAI_API_KEY ?? process.env.MOONSHOT_API_KEY;
 const runLive =
-  process.env.RUN_LIVE_E2E === "1" && typeof process.env.OPENAI_API_KEY === "string";
+  process.env.RUN_LIVE_E2E === "1" && typeof liveApiKey === "string";
 
 const liveIt = runLive ? it : it.skip;
 
@@ -14,9 +15,9 @@ describe("e2e live openai smoke", () => {
     async () => {
       const app = buildApp({
         llmMode: "openai",
-        openAiApiKey: process.env.OPENAI_API_KEY,
-        openAiModel: process.env.OPENAI_MODEL,
-        openAiBaseUrl: process.env.OPENAI_BASE_URL,
+        openAiApiKey: liveApiKey,
+        openAiModel: process.env.OPENAI_MODEL ?? process.env.MOONSHOT_MODEL,
+        openAiBaseUrl: process.env.OPENAI_BASE_URL ?? process.env.MOONSHOT_BASE_URL,
         useMockAdapters: false
       });
       await app.ready();

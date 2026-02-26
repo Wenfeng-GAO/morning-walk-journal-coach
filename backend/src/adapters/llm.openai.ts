@@ -4,18 +4,25 @@ import type { Session } from "../domain/session";
 
 import type { LlmAdapter, LlmNextQuestionInput } from "./llm";
 
-type OpenAiResponsesBody = {
+type ChatCompletionsBody = {
   model: string;
-  input: string;
-  text: {
-    format: {
-      type: "text";
-    };
-  };
+  messages: Array<{
+    role: "system" | "user";
+    content: string;
+  }>;
 };
 
-type OpenAiResponsesOutput = {
-  output_text?: string;
+type ChatCompletionsOutput = {
+  choices?: Array<{
+    message?: {
+      content?:
+        | string
+        | Array<{
+            type?: string;
+            text?: string;
+          }>;
+    };
+  }>;
 };
 
 function extractJsonCandidate(raw: string): string {
@@ -64,18 +71,45 @@ export class OpenAiLlmAdapter implements LlmAdapter {
     }
   ) {}
 
+  private baseUrl(): string {
+    return this.options.baseUrl.replace(/\/+$/, "");
+  }
+
+  private extractMessageContent(data: ChatCompletionsOutput): string | null {
+    const rawContent = data.choices?.[0]?.message?.content;
+
+    if (typeof rawContent === "string") {
+      return rawContent;
+    }
+
+    if (Array.isArray(rawContent)) {
+      const joined = rawContent
+        .map((item) => (typeof item.text === "string" ? item.text : ""))
+        .join("")
+        .trim();
+
+      return joined.length > 0 ? joined : null;
+    }
+
+    return null;
+  }
+
   private async createTextCompletion(prompt: string): Promise<string | null> {
-    const body: OpenAiResponsesBody = {
+    const body: ChatCompletionsBody = {
       model: this.options.model,
-      input: prompt,
-      text: {
-        format: {
-          type: "text"
+      messages: [
+        {
+          role: "system",
+          content: "You are a strict JSON response assistant."
+        },
+        {
+          role: "user",
+          content: prompt
         }
-      }
+      ]
     };
 
-    const res = await fetch(`${this.options.baseUrl}/responses`, {
+    const res = await fetch(`${this.baseUrl()}/chat/completions`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -85,12 +119,12 @@ export class OpenAiLlmAdapter implements LlmAdapter {
     });
 
     if (!res.ok) {
-      throw new Error(`OpenAI responses API failed with ${res.status}`);
+      throw new Error(`OpenAI-compatible chat completions failed with ${res.status}`);
     }
 
-    const data = (await res.json()) as OpenAiResponsesOutput;
+    const data = (await res.json()) as ChatCompletionsOutput;
 
-    return typeof data.output_text === "string" ? data.output_text : null;
+    return this.extractMessageContent(data);
   }
 
   async nextQuestion(input: LlmNextQuestionInput): Promise<NextQuestion | null> {

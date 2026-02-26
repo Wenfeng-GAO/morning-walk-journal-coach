@@ -15,8 +15,9 @@ An iPhone-first, voice-driven morning reflection assistant that guides structure
 - [Sample Shortcut Payloads](docs/integration/sample-shortcut-payloads.json)
 
 ## LLM Integration (Minimal)
-- Set env vars: `OPENAI_API_KEY`, optional `OPENAI_MODEL`, optional `OPENAI_BASE_URL`
+- Preferred env vars for Kimi 2.5: `MOONSHOT_API_KEY`, optional `MOONSHOT_MODEL`, optional `MOONSHOT_BASE_URL`
+- OpenAI-compatible aliases are also supported: `OPENAI_API_KEY`, `OPENAI_MODEL`, `OPENAI_BASE_URL`
 - Local server still works without keys (fallback policy path)
 - Run smoke test with real model:
   - `cd backend`
-  - `OPENAI_API_KEY=... npm run test:e2e-live`
+  - `MOONSHOT_API_KEY=... npm run test:e2e-live`

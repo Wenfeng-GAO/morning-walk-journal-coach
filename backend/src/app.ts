@@ -38,7 +38,10 @@ function resolveLlmAdapter(options: BuildAppOptions): LlmAdapter {
   }
 
   if (options.llmMode === "openai") {
-    const apiKey = options.openAiApiKey ?? process.env.OPENAI_API_KEY;
+    const apiKey =
+      options.openAiApiKey ??
+      process.env.OPENAI_API_KEY ??
+      process.env.MOONSHOT_API_KEY;
 
     if (!apiKey) {
       return new NoopLlmAdapter();
@@ -46,8 +49,16 @@ function resolveLlmAdapter(options: BuildAppOptions): LlmAdapter {
 
     return new OpenAiLlmAdapter({
       apiKey,
-      model: options.openAiModel ?? process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
-      baseUrl: options.openAiBaseUrl ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1"
+      model:
+        options.openAiModel ??
+        process.env.OPENAI_MODEL ??
+        process.env.MOONSHOT_MODEL ??
+        "kimi-k2.5",
+      baseUrl:
+        options.openAiBaseUrl ??
+        process.env.OPENAI_BASE_URL ??
+        process.env.MOONSHOT_BASE_URL ??
+        "https://api.moonshot.cn/v1"
     });
   }
 
