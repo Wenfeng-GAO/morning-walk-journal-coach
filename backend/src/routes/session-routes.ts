@@ -3,8 +3,9 @@ import { randomUUID } from "node:crypto";
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
+import type { LlmAdapter } from "../adapters/llm";
 import type { SttAdapter } from "../adapters/stt";
-import { composeMorningNote } from "../domain/markdown-composer";
+import { composeMorningNote, type MorningNoteInput } from "../domain/markdown-composer";
 import { computeNextQuestion } from "../domain/question-policy";
 import { FIRST_QUESTION, type Session } from "../domain/session";
 import { sendAppError } from "../http/errors";
@@ -28,7 +29,7 @@ const finalizeParamsSchema = z.object({
   sessionId: z.string().min(1)
 });
 
-function toMorningNoteInput(session: Session) {
+function toMorningNoteInput(session: Session): MorningNoteInput {
   const userTurns = session.transcript
     .filter((message) => message.role === "user")
     .map((message) => message.text);
@@ -49,7 +50,8 @@ function toMorningNoteInput(session: Session) {
 export function registerSessionRoutes(
   app: FastifyInstance,
   store: SessionStore,
-  sttAdapter: SttAdapter
+  sttAdapter: SttAdapter,
+  llmAdapter: LlmAdapter
 ) {
   app.post("/sessions/start", async (request, reply) => {
     const body = startSessionBodySchema.parse(request.body);
@@ -103,7 +105,22 @@ export function registerSessionRoutes(
     session.transcript.push({ role: "user", text: transcript });
     session.turnIndex += 1;
 
-    const next = computeNextQuestion(session);
+    const fallback = computeNextQuestion(session);
+    let next = fallback;
+
+    try {
+      const llmNext = await llmAdapter.nextQuestion({
+        session,
+        latestUserTranscript: transcript,
+        fallback
+      });
+
+      if (llmNext) {
+        next = llmNext;
+      }
+    } catch (error) {
+      request.log.warn({ error }, "llm next question failed, fallback used");
+    }
 
     if (next.nextQuestionType !== "finalize") {
       session.transcript.push({ role: "assistant", text: next.nextQuestion });
@@ -136,7 +153,20 @@ export function registerSessionRoutes(
       );
     }
 
-    const markdown = composeMorningNote(toMorningNoteInput(session));
+    const fallback = toMorningNoteInput(session);
+    let noteInput = fallback;
+
+    try {
+      const llmSummary = await llmAdapter.summarizeToNoteInput(session);
+
+      if (llmSummary) {
+        noteInput = llmSummary;
+      }
+    } catch (error) {
+      request.log.warn({ error }, "llm summary failed, fallback used");
+    }
+
+    const markdown = composeMorningNote(noteInput);
 
     return reply.send({
       sessionId: session.sessionId,

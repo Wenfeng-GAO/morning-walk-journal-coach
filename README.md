@@ -13,3 +13,10 @@ An iPhone-first, voice-driven morning reflection assistant that guides structure
 - [Implementation Plan](docs/plans/2026-02-26-morning-walk-journal-coach-implementation.md)
 - [iOS Shortcut Contract](docs/integration/ios-shortcut-contract.md)
 - [Sample Shortcut Payloads](docs/integration/sample-shortcut-payloads.json)
+
+## LLM Integration (Minimal)
+- Set env vars: `OPENAI_API_KEY`, optional `OPENAI_MODEL`, optional `OPENAI_BASE_URL`
+- Local server still works without keys (fallback policy path)
+- Run smoke test with real model:
+  - `cd backend`
+  - `OPENAI_API_KEY=... npm run test:e2e-live`
