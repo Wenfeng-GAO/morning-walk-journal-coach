@@ -4,6 +4,13 @@
 
 This contract defines how iOS Shortcut talks to the backend during one morning session.
 
+## Backend LLM Config (Required)
+
+1. Copy `backend/config/llm.example.json` to `backend/config/llm.local.json`.
+2. Set `active_provider` to your target provider (`moonshot` for Kimi 2.5).
+3. Fill the target provider's `api_key`.
+4. Start backend after config is ready.
+
 ## 1) Start Session
 
 - Method: `POST`
