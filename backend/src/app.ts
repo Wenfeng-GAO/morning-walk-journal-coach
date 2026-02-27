@@ -7,6 +7,10 @@ import { OpenAiLlmAdapter } from "./adapters/llm.openai";
 import { MockSttAdapter } from "./adapters/stt.mock";
 import { NoopSttAdapter } from "./adapters/stt.noop";
 import type { SttAdapter } from "./adapters/stt";
+import {
+  DEFAULT_LLM_CONFIG_PATH,
+  loadLlmConfigFromFile
+} from "./config/llm-config";
 import { registerSessionRoutes } from "./routes/session-routes";
 import { InMemorySessionStore } from "./store/in-memory-session-store";
 
@@ -18,6 +22,7 @@ export type BuildAppOptions = {
   openAiApiKey?: string;
   openAiModel?: string;
   openAiBaseUrl?: string;
+  llmConfigPath?: string;
 };
 
 function resolveSttAdapter(options: BuildAppOptions): SttAdapter {
@@ -38,27 +43,24 @@ function resolveLlmAdapter(options: BuildAppOptions): LlmAdapter {
   }
 
   if (options.llmMode === "openai") {
-    const apiKey =
-      options.openAiApiKey ??
-      process.env.OPENAI_API_KEY ??
-      process.env.MOONSHOT_API_KEY;
+    const explicitApiKey = options.openAiApiKey;
 
-    if (!apiKey) {
-      return new NoopLlmAdapter();
+    if (explicitApiKey) {
+      return new OpenAiLlmAdapter({
+        apiKey: explicitApiKey,
+        model: options.openAiModel ?? "kimi-k2.5",
+        baseUrl: options.openAiBaseUrl ?? "https://api.moonshot.cn/v1"
+      });
     }
 
+    const config = loadLlmConfigFromFile(
+      options.llmConfigPath ?? DEFAULT_LLM_CONFIG_PATH
+    );
+
     return new OpenAiLlmAdapter({
-      apiKey,
-      model:
-        options.openAiModel ??
-        process.env.OPENAI_MODEL ??
-        process.env.MOONSHOT_MODEL ??
-        "kimi-k2.5",
-      baseUrl:
-        options.openAiBaseUrl ??
-        process.env.OPENAI_BASE_URL ??
-        process.env.MOONSHOT_BASE_URL ??
-        "https://api.moonshot.cn/v1"
+      apiKey: config.resolved.apiKey,
+      model: config.resolved.model,
+      baseUrl: config.resolved.baseUrl
     });
   }
 

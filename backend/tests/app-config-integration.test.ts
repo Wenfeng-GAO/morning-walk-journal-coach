@@ -10,25 +10,26 @@ afterEach(() => {
   global.fetch = originalFetch;
 });
 
-describe("kimi openai-compatible defaults", () => {
-  it("uses config file key/model/base url defaults", async () => {
+describe("app config integration", () => {
+  it("uses llm config file for openai-compatible adapter", async () => {
     const fetchMock = vi.fn(async () => {
-      const body = {
-        choices: [
-          {
-            message: {
-              content: '{"nextQuestion":"Kimi下一问","nextQuestionType":"follow_up"}'
+      return new Response(
+        JSON.stringify({
+          choices: [
+            {
+              message: {
+                content: '{"nextQuestion":"来自配置文件的问题","nextQuestionType":"follow_up"}'
+              }
             }
+          ]
+        }),
+        {
+          status: 200,
+          headers: {
+            "Content-Type": "application/json"
           }
-        ]
-      };
-
-      return new Response(JSON.stringify(body), {
-        status: 200,
-        headers: {
-          "Content-Type": "application/json"
         }
-      });
+      );
     });
 
     vi.stubGlobal("fetch", fetchMock);
@@ -50,8 +51,7 @@ describe("kimi openai-compatible defaults", () => {
       .send({ transcript: "昨天推进了需求" });
 
     expect(answer.status).toBe(200);
-    expect(answer.body.nextQuestion).toBe("Kimi下一问");
-
+    expect(answer.body.nextQuestion).toBe("来自配置文件的问题");
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
