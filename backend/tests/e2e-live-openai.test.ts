@@ -2,11 +2,20 @@ import request from "supertest";
 import { describe, expect, it } from "vitest";
 
 import { buildApp } from "../src/app";
+import { DEFAULT_LLM_CONFIG_PATH, loadLlmConfigFromFile } from "../src/config/llm-config";
 
-const liveApiKey = process.env.OPENAI_API_KEY ?? process.env.MOONSHOT_API_KEY;
-const runLive =
-  process.env.RUN_LIVE_E2E === "1" && typeof liveApiKey === "string";
+const liveConfigPath = process.env.LLM_CONFIG_PATH ?? DEFAULT_LLM_CONFIG_PATH;
 
+function hasLiveConfig(): boolean {
+  try {
+    loadLlmConfigFromFile(liveConfigPath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const runLive = process.env.RUN_LIVE_E2E === "1" && hasLiveConfig();
 const liveIt = runLive ? it : it.skip;
 
 describe("e2e live openai smoke", () => {
@@ -15,9 +24,7 @@ describe("e2e live openai smoke", () => {
     async () => {
       const app = buildApp({
         llmMode: "openai",
-        openAiApiKey: liveApiKey,
-        openAiModel: process.env.OPENAI_MODEL ?? process.env.MOONSHOT_MODEL,
-        openAiBaseUrl: process.env.OPENAI_BASE_URL ?? process.env.MOONSHOT_BASE_URL,
+        llmConfigPath: liveConfigPath,
         useMockAdapters: false
       });
       await app.ready();
