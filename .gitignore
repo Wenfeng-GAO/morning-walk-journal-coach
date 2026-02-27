@@ -1,3 +1,4 @@
 .worktrees/
 backend/node_modules/
 backend/dist/
+backend/config/llm.local.json

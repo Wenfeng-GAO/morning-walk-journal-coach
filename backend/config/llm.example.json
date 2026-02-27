@@ -1,0 +1,15 @@
+{
+  "active_provider": "moonshot",
+  "providers": {
+    "moonshot": {
+      "model": "kimi-k2.5",
+      "api_key": "replace-with-your-key",
+      "base_url": "https://api.moonshot.cn/v1"
+    },
+    "openai": {
+      "model": "gpt-4.1-mini",
+      "api_key": "replace-with-your-openai-key",
+      "base_url": "https://api.openai.com/v1"
+    }
+  }
+}
