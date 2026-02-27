@@ -1,0 +1,10 @@
+{
+  "active_provider": "moonshot",
+  "providers": {
+    "openai": {
+      "model": "gpt-4.1-mini",
+      "api_key": "sk-test",
+      "base_url": "https://api.openai.com/v1"
+    }
+  }
+}

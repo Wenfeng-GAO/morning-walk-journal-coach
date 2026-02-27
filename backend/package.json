@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
     "test": "vitest run",
+    "test:e2e-live": "RUN_LIVE_E2E=1 vitest run --run tests/e2e-live-openai.test.ts",
     "lint:docs": "node scripts/lint-docs.mjs"
   },
   "dependencies": {
