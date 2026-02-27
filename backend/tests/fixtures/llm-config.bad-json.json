@@ -1,0 +1,9 @@
+{
+  "active_provider": "moonshot",
+  "providers": {
+    "moonshot": {
+      "model": "kimi-k2.5",
+      "api_key": "msk-test",
+      "base_url": "https://api.moonshot.cn/v1"
+    }
+  }
